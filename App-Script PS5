@@ -1,0 +1,88 @@
+Streamline and Optimizing Post-Sale Workflow
+
+function onOpen() {
+  const ui = SpreadsheetApp.getUi();
+  const menu = ui.createMenu('AutoFill Docs');
+  menu.addItem('Create New Docs', 'createOrderForm');
+  menu.addToUi();
+}
+
+function createOrderForm() {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var dataRange = sheet.getDataRange();
+  var data = dataRange.getValues();
+  
+  // IDs of the template document and target folder
+  var templateId = '1jMgpUal8quv-tsny5zRFNgz2yUMvPYKAOQilE6JMeAw'; // Replace with your template document ID
+  var folderId = '1c7u7YJnszOfB-9ijTaq82ob6-9nfXjkd'; // Replace with your target folder ID
+
+// Get the header row
+  var headers = data[0];
+  
+  // Find the index of the relevant columns
+  var timeIndex = headers.indexOf('Timestamp');
+  var nameIndex = headers.indexOf('Your Name');
+  var emailIndex = headers.indexOf('Email address');
+  var shipIndex = headers.indexOf('Shipping Address');
+  var quantityIndex = headers.indexOf('Quantity');
+  var colorIndex = headers.indexOf('Color (White/Black)');
+  var sizeIndex = headers.indexOf('Size (S, M, L, XL, 2XL, 3XL) ');
+  var linkIndex = headers.indexOf('Document Link');
+  
+  // Iterate through rows to create order documents
+  for (var i = 1; i < data.length; i++) {
+    var yourName = data[i][nameIndex];
+    var timeStamp = data[i][timeIndex];
+    var emailAddress = data[i][emailIndex];
+    var shipAddress = data[i][shipIndex];
+    var quantityShirt = data[i][quantityIndex];
+    var colorShirt = data[i][colorIndex];
+    var sizeShirt = data[i][sizeIndex];
+
+
+    if ( !yourName || !timeStamp || !emailAddress || !shipAddress || !quantityShirt || !colorShirt || !sizeShirt ) {
+      continue; // Skip rows with missing data
+    }
+    
+    // Create a new order document
+    var docUrl = createOrderDocument(templateId, folderId, yourName, timeStamp, emailAddress, shipAddress, quantityShirt, colorShirt, sizeShirt);
+    
+    // Update the Google Sheet with the document link
+    sheet.getRange(i + 1, linkIndex + 1).setValue(docUrl);
+  }
+}
+
+function createOrderDocument(templateId, folderId, yourName, timeStamp, emailAddress, shipAddress, quantityShirt, colorShirt, sizeShirt) {
+  // Get the template document and create a copy
+  var templateDoc = DriveApp.getFileById(templateId);
+  var newDoc = templateDoc.makeCopy(yourName + ' Order Form (Responses)', DriveApp.getFolderById(folderId));
+  var docId = newDoc.getId();
+  
+  // Open the new document
+  var doc = DocumentApp.openById(docId);
+  var body = doc.getBody();
+  
+  // Replace placeholders with actual content
+  body.replaceText('{{Your Name}}',yourName);
+  body.replaceText('{{email}}',emailAddress);
+  body.replaceText('{{address}}', shipAddress);
+  body.replaceText('{{Timestamp}}', timeStamp);
+  body.replaceText('{{quantity}}',quantityShirt);
+  body.replaceText('{{color}}',colorShirt);
+  body.replaceText('{{size}}',sizeShirt);
+
+ 
+  
+  // Save and close the document
+  doc.saveAndClose();
+  
+  // Return the URL of the new document
+  return doc.getUrl();
+}
+
+function testCreateOrderForm() {
+  createOrderForm();
+}
+
+
+
