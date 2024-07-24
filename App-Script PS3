@@ -1,0 +1,71 @@
+// Standardizing policy documentation
+
+
+function onOpen() {
+  const ui = SpreadsheetApp.getUi();
+  const menu = ui.createMenu('AutoFill Docs');
+  menu.addItem('Create New Docs', 'createPolicyDocuments');
+  menu.addToUi();
+}
+
+function createPolicyDocuments() {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var dataRange = sheet.getDataRange();
+  var data = dataRange.getValues();
+  
+  // IDs of the template document and target folder
+  var templateId = '1uby1HArzPrnLjLi0HdnfyubZxc1KBtIvvItRaAu88w4'; // Replace with your template document ID
+  var folderId = '131UFqR_d4tnm2bP2g49DDftBiWxyIlqU'; // Replace with your target folder ID
+
+  // Get the header row
+  var headers = data[0];
+  
+  // Find the index of the relevant columns
+  var nameIndex = headers.indexOf('Full Name');
+  var emailIndex = headers.indexOf('Email Address');
+  var linkIndex = headers.indexOf('Document Link');
+  
+  // Iterate through rows to create policy documents
+  for (var i = 1; i < data.length; i++) {
+    var fullName = data[i][nameIndex];
+    var emailAddress = data[i][emailIndex];
+    
+    if (!fullName || !emailAddress) {
+      continue; // Skip rows with missing data
+    }
+    
+    // Create a new policy document
+    var docUrl = createPolicyDocument(templateId, folderId, fullName, emailAddress);
+    
+    // Update the Google Sheet with the document link
+    sheet.getRange(i + 1, linkIndex + 1).setValue(docUrl);
+  }
+}
+
+function createPolicyDocument(templateId, folderId, fullName, emailAddress) {
+  // Get the template document and create a copy
+  var templateDoc = DriveApp.getFileById(templateId);
+  var newDoc = templateDoc.makeCopy(fullName + ' Policy Document', DriveApp.getFolderById(folderId));
+  var docId = newDoc.getId();
+  
+  // Open the new document
+  var doc = DocumentApp.openById(docId);
+  var body = doc.getBody();
+  
+  // Replace placeholders with actual content
+  body.replaceText('{{Full Name}}', fullName);
+  body.replaceText('{{Email Address}}', emailAddress);
+  body.replaceText('{{Today Date}}', new Date().toLocaleDateString());
+  
+  // Save and close the document
+  doc.saveAndClose();
+  
+  // Return the URL of the new document
+  return doc.getUrl();
+}
+
+function testCreatePolicyDocuments() {
+  createPolicyDocuments();
+}
+
+
