@@ -3,8 +3,8 @@
 
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
-  const menu = ui.createMenu('AutoFill Docs');
-  menu.addItem('Create New Docs', 'createPolicyDocuments');
+  const menu = ui.createMenu('AutoFill Pdf');
+  menu.addItem('Create New Pdf', 'createPolicyDocuments');
   menu.addToUi();
 }
 
@@ -34,8 +34,11 @@ function createPolicyDocuments() {
       continue; // Skip rows with missing data
     }
     
-    // Create a new policy document
-    var docUrl = createPolicyDocument(templateId, folderId, fullName, emailAddress);
+    // Create a new policy document and get its PDF file
+    var { docUrl, pdfFile } = createPolicyDocument(templateId, folderId, fullName, emailAddress);
+    
+    // Send the PDF as an email attachment
+    sendEmailWithPdf(emailAddress, fullName, pdfFile);
     
     // Update the Google Sheet with the document link
     sheet.getRange(i + 1, linkIndex + 1).setValue(docUrl);
@@ -59,13 +62,33 @@ function createPolicyDocument(templateId, folderId, fullName, emailAddress) {
   
   // Save and close the document
   doc.saveAndClose();
+
+  // Convert the Google Document to a PDF blob
+  var docFile = DriveApp.getFileById(docId);
+  var pdfBlob = docFile.getAs('application/pdf');
   
-  // Return the URL of the new document
-  return doc.getUrl();
+  // Retrieve the folder where the PDF will be saved
+  var folder = DriveApp.getFolderById(folderId);
+  
+  // Create a new PDF file in the specified folder
+  var pdfFile = folder.createFile(pdfBlob);
+  
+  // Return the URL of the new PDF file and the PDF file itself
+  return {
+    docUrl: pdfFile.getUrl(),
+    pdfFile: pdfFile
+  };
 }
 
-function testCreatePolicyDocuments() {
-  createPolicyDocuments();
+function sendEmailWithPdf(emailAddress, fullName, pdfFile) {
+  var subject = 'Your Policy Document';
+  var body = 'Dear ' + fullName + ',\n\nPlease find attached your policy document.\n\nBest regards,\nYour Company';
+  
+  // Send the email with the PDF attachment
+  MailApp.sendEmail({
+    to: emailAddress,
+    subject: subject,
+    body: body,
+    attachments: [pdfFile.getAs('application/pdf')]
+  });
 }
-
-
