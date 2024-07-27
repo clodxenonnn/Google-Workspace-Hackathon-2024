@@ -1,9 +1,11 @@
 Streamline and Optimizing Post-Sale Workflow
 
+
+ 
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
-  const menu = ui.createMenu('AutoFill Docs');
-  menu.addItem('Create New Docs', 'createOrderForm');
+  const menu = ui.createMenu('AutoFill Pdf');
+  menu.addItem('Create New Pdf', 'createOrderForm');
   menu.addToUi();
 }
 
@@ -16,7 +18,7 @@ function createOrderForm() {
   var templateId = '1jMgpUal8quv-tsny5zRFNgz2yUMvPYKAOQilE6JMeAw'; // Replace with your template document ID
   var folderId = '1c7u7YJnszOfB-9ijTaq82ob6-9nfXjkd'; // Replace with your target folder ID
 
-// Get the header row
+  // Get the header row
   var headers = data[0];
   
   // Find the index of the relevant columns
@@ -29,6 +31,12 @@ function createOrderForm() {
   var sizeIndex = headers.indexOf('Size (S, M, L, XL, 2XL, 3XL) ');
   var linkIndex = headers.indexOf('Document Link');
   
+  // Add "Document Link" column if it does not exist
+  if (linkIndex === -1) {
+    linkIndex = headers.length;
+    sheet.getRange(1, linkIndex + 1).setValue('Document Link');
+  }
+  
   // Iterate through rows to create order documents
   for (var i = 1; i < data.length; i++) {
     var yourName = data[i][nameIndex];
@@ -39,16 +47,19 @@ function createOrderForm() {
     var colorShirt = data[i][colorIndex];
     var sizeShirt = data[i][sizeIndex];
 
-
-    if ( !yourName || !timeStamp || !emailAddress || !shipAddress || !quantityShirt || !colorShirt || !sizeShirt ) {
+    if (!yourName || !timeStamp || !emailAddress || !shipAddress || !quantityShirt || !colorShirt || !sizeShirt) {
       continue; // Skip rows with missing data
     }
     
-    // Create a new order document
-    var docUrl = createOrderDocument(templateId, folderId, yourName, timeStamp, emailAddress, shipAddress, quantityShirt, colorShirt, sizeShirt);
+    // Create a new order document and get the PDF URL
+    var pdfUrl = createOrderDocument(templateId, folderId, yourName, timeStamp, emailAddress, shipAddress, quantityShirt, colorShirt, sizeShirt);
     
     // Update the Google Sheet with the document link
-    sheet.getRange(i + 1, linkIndex + 1).setValue(docUrl);
+    sheet.getRange(i + 1, linkIndex + 1).setValue(pdfUrl);
+    
+    // Send an email with the PDF attachment
+    var pdfFile = DriveApp.getFileById(pdfUrl.split('/d/')[1].split('/')[0]); // Extract the file ID from the URL
+    sendEmailWithPdf(emailAddress, yourName, pdfFile);
   }
 }
 
@@ -63,21 +74,42 @@ function createOrderDocument(templateId, folderId, yourName, timeStamp, emailAdd
   var body = doc.getBody();
   
   // Replace placeholders with actual content
-  body.replaceText('{{Your Name}}',yourName);
-  body.replaceText('{{email}}',emailAddress);
+  body.replaceText('{{Your Name}}', yourName);
+  body.replaceText('{{email}}', emailAddress);
   body.replaceText('{{address}}', shipAddress);
   body.replaceText('{{Timestamp}}', timeStamp);
-  body.replaceText('{{quantity}}',quantityShirt);
-  body.replaceText('{{color}}',colorShirt);
-  body.replaceText('{{size}}',sizeShirt);
+  body.replaceText('{{quantity}}', quantityShirt);
+  body.replaceText('{{color}}', colorShirt);
+  body.replaceText('{{size}}', sizeShirt);
 
- 
-  
   // Save and close the document
   doc.saveAndClose();
   
-  // Return the URL of the new document
-  return doc.getUrl();
+  // Convert the Google Document to a PDF blob
+  var docFile = DriveApp.getFileById(docId);
+  var pdfBlob = docFile.getAs('application/pdf');
+  
+  // Retrieve the folder where the PDF will be saved
+  var folder = DriveApp.getFolderById(folderId);
+  
+  // Create a new PDF file in the specified folder
+  var pdfFile = folder.createFile(pdfBlob);
+  
+  // Return the URL of the new PDF file
+  return pdfFile.getUrl();
+}
+
+function sendEmailWithPdf(emailAddress, fullName, pdfFile) {
+  var subject = 'Your Order Confirmation';
+  var body = 'Dear ' + fullName + ',\n\nThank you for your purchase. IF you find any problem, contact us.\n\nBest regards,\nDHYS Corporation';
+  
+  // Send the email with the PDF attachment
+  MailApp.sendEmail({
+    to: emailAddress,
+    subject: subject,
+    body: body,
+    attachments: [pdfFile.getAs('application/pdf')]
+  });
 }
 
 function testCreateOrderForm() {
