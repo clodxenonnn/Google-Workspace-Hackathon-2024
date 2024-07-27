@@ -3,8 +3,8 @@
 
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
-  const menu = ui.createMenu('AutoFill Docs');
-  menu.addItem('Create New Docs', 'createPolicyForm');
+  const menu = ui.createMenu('AutoFill Pdf');
+  menu.addItem('Create New Pdf', 'createPolicyForm');
   menu.addToUi();
 }
 
@@ -63,14 +63,22 @@ function createPolicyDocument(templateId, folderId, numberEmployee, employeeName
   // Save and close the document
   doc.saveAndClose();
   
-  // Return the URL of the new document
-  return doc.getUrl();
+  var docFile = DriveApp.getFileById(docId);
+  var pdfBlob = docFile.getAs('application/pdf');
+  
+  // Retrieve the folder where the PDF will be saved
+  var folder = DriveApp.getFolderById(folderId);
+  
+  // Create a new PDF file in the specified folder
+  var pdfFile = folder.createFile(pdfBlob);
+  
+  // Return the URL of the new PDF file
+  return pdfFile.getUrl();
 }
 
 function testCreatePolicyForm() {
   createPolicyForm();
 }
-
 
 
 
