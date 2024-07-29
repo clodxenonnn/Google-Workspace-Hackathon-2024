@@ -3,5 +3,5 @@ organised by Google Developer Student Club from Asia-Pacifier University in Mala
 
 Our team name is DHYS. 
 Team Leader is TAN DE HANG from UTHM and Team Member is Chong You Sheng from TARUMT.
-We are doing Operation Case Study, one of the case study given by the competition.
+We are doing Operations Case Study, one of the case study given by the competition.
 In the files given, its contain every App-Script Code according to the different problem statements.
