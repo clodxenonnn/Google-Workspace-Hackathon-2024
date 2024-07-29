@@ -1,4 +1,4 @@
-// This is the App-Script for Problem Statement 1
+// This is the App-Script Code for Problem Statement 1
 
 
 
