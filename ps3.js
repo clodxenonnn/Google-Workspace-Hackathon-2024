@@ -1,4 +1,4 @@
-// Standardizing policy documentation
+// Standardizing policy documentation, Problem Statement 3 Code
 
 
 function onOpen() {
